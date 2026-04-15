@@ -1,0 +1,23 @@
+# portwatch.example.yaml — copy to portwatch.yaml and adjust as needed.
+
+scan:
+  # First port in the range to monitor (inclusive).
+  port_start: 1
+
+  # Last port in the range to monitor (inclusive).
+  port_end: 65535
+
+  # How often to re-scan the port range.
+  # Accepts Go duration strings: 10s, 1m, 5m30s, etc.
+  interval: 30s
+
+alert:
+  # Where to send notifications.
+  # Supported values:
+  #   log    — structured log lines (default)
+  #   stdout — plain-text lines on standard output
+  backend: log
+
+  # Path to a log file. Leave empty to write to stderr.
+  # Only used when backend is "log".
+  log_file: ""
