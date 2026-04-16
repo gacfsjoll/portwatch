@@ -13,6 +13,19 @@
 //	  backend: log      # "log" or "stdout"
 //	  log_file: ""      # optional; defaults to stderr when empty
 //
-// Use [Load] to read a file from disk, or [Default] to obtain a configuration
-// with sensible out-of-the-box values.
+// # Loading configuration
+//
+// Use [Load] to read a configuration file from disk. If the file does not
+// exist, [Load] returns an error wrapping [os.ErrNotExist].
+//
+// Use [Default] to obtain a configuration with sensible out-of-the-box
+// values without requiring a file on disk. This is useful for tests or
+// single-binary deployments that embed their settings.
+//
+// # Validation
+//
+// Both [Load] and [Default] return a validated [Config]. Validation ensures
+// that port_start is less than or equal to port_end, that both values fall
+// within the valid port range (1–65535), and that the chosen alert backend
+// is recognised.
 package config
