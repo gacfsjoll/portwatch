@@ -1,4 +1,4 @@
-// Package history records port change events to a persistent log.
+// Package history records port change events to a persistent JSON file.
 package history
 
 import (
@@ -10,65 +10,65 @@ import (
 	"time"
 )
 
-// Entry represents a single recorded port change event.
-type Entry struct {
-	Timestamp time.Time `json:"timestamp"`
-	Port      uint16    `json:"port"`
-	Proto     string    `json:"proto"`
-	Event     string    `json:"event"` // "opened" or "closed"
+// Event represents a single port change occurrence.
+type Event struct {
+	Port  int       `json:"port"`
+	Proto string    `json:"proto"`
+	Kind  string    `json:"kind"` // "opened" | "closed"
+	At    time.Time `json:"at"`
 }
 
-// Recorder appends history entries to a newline-delimited JSON file.
+// Recorder appends events to a JSON file.
 type Recorder struct {
 	mu   sync.Mutex
 	path string
 }
 
-// NewRecorder creates a Recorder that writes to the given file path.
-func NewRecorder(path string) (*Recorder, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return nil, fmt.Errorf("history: create dirs: %w", err)
-	}
-	return &Recorder{path: path}, nil
+// NewRecorder creates a Recorder that writes to path.
+func NewRecorder(path string) *Recorder {
+	return &Recorder{path: path}
 }
 
-// Record appends an entry to the history file.
-func (r *Recorder) Record(e Entry) error {
+// Record appends e to the history file.
+func (r *Recorder) Record(e Event) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	f, err := os.OpenFile(r.path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	events, err := load(r.path)
 	if err != nil {
-		return fmt.Errorf("history: open file: %w", err)
+		return err
 	}
-	defer f.Close()
-
-	enc := json.NewEncoder(f)
-	if err := enc.Encode(e); err != nil {
-		return fmt.Errorf("history: encode entry: %w", err)
-	}
-	return nil
+	events = append(events, e)
+	return save(r.path, events)
 }
 
-// Load reads all entries from the history file.
-func Load(path string) ([]Entry, error) {
-	f, err := os.Open(path)
+// Load reads all events from path. Returns empty slice if file is missing.
+func Load(path string) ([]Event, error) {
+	return load(path)
+}
+
+func load(path string) ([]Event, error) {
+	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
-		return nil, nil
+		return []Event{}, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("history: open file: %w", err)
+		return nil, fmt.Errorf("history read: %w", err)
 	}
-	defer f.Close()
+	var events []Event
+	if err := json.Unmarshal(data, &events); err != nil {
+		return nil, fmt.Errorf("history parse: %w", err)
+	}
+	return events, nil
+}
 
-	var entries []Entry
-	dec := json.NewDecoder(f)
-	for dec.More() {
-		var e Entry
-		if err := dec.Decode(&e); err != nil {
-			return nil, fmt.Errorf("history: decode entry: %w", err)
-		}
-		entries = append(entries, e)
+func save(path string, events []Event) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("history mkdir: %w", err)
 	}
-	return entries, nil
+	data, err := json.MarshalIndent(events, "", "  ")
+	if err != nil {
+		return fmt.Errorf("history marshal: %w", err)
+	}
+	return os.WriteFile(path, data, 0o644)
 }
