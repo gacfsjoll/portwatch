@@ -7,6 +7,11 @@
 // is identical to the last persisted baseline before doing a more expensive
 // field-by-field comparison via the snapshot package.
 //
+// Internally, each port entry is serialised to a canonical byte representation,
+// the resulting byte slices are sorted, and a single SHA-256 hash is computed
+// over the concatenation. This guarantees that the digest is independent of the
+// order in which ports are reported by the underlying scanner.
+//
 // # Usage
 //
 //	sum, err := digest.Compute(ports)
