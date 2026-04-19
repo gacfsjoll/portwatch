@@ -46,6 +46,14 @@ func TestRunAcknowledgeRevoke_NoArgs(t *testing.T) {
 	}
 }
 
+func TestRunAcknowledgeRevoke_UnknownPort(t *testing.T) {
+	path := tempAckStore(t)
+	// Revoking a port that was never acknowledged should return an error.
+	if err := runAcknowledgeRevoke([]string{"9090"}, path); err == nil {
+		t.Error("expected error when revoking unacknowledged port")
+	}
+}
+
 func TestParsePort_Valid(t *testing.T) {
 	p, err := parsePort("80")
 	if err != nil || p != 80 {
