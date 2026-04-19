@@ -59,6 +59,36 @@ func (f *Filter) Allow(port int) bool {
 	return false
 }
 
+// String returns a human-readable summary of the filter rules.
+func (f *Filter) String() string {
+	if len(f.includes) == 0 && len(f.excludes) == 0 {
+		return "filter: all ports allowed"
+	}
+	var sb strings.Builder
+	if len(f.includes) > 0 {
+		fmt.Fprintf(&sb, "include: %s", rulesToString(f.includes))
+	}
+	if len(f.excludes) > 0 {
+		if sb.Len() > 0 {
+			sb.WriteString("; ")
+		}
+		fmt.Fprintf(&sb, "exclude: %s", rulesToString(f.excludes))
+	}
+	return sb.String()
+}
+
+func rulesToString(rules []Rule) string {
+	parts := make([]string, len(rules))
+	for i, r := range rules {
+		if r.Low == r.High {
+			parts[i] = strconv.Itoa(r.Low)
+		} else {
+			parts[i] = fmt.Sprintf("%d-%d", r.Low, r.High)
+		}
+	}
+	return strings.Join(parts, ", ")
+}
+
 func parseRule(expr string) (Rule, error) {
 	parts := strings.SplitN(strings.TrimSpace(expr), "-", 2)
 	low, err := strconv.Atoi(parts[0])
