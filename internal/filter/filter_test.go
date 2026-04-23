@@ -77,3 +77,25 @@ func TestNew_InvalidRange_HighLessThanLow(t *testing.T) {
 		t.Fatal("expected error when high < low")
 	}
 }
+
+func TestAllow_BoundaryPorts(t *testing.T) {
+	tests := []struct {
+		port    int
+		allowed bool
+	}{
+		{8000, true},  // lower bound of include range
+		{9000, true},  // upper bound of include range
+		{7999, false}, // just below lower bound
+		{9001, false}, // just above upper bound
+	}
+
+	f, err := filter.New([]string{"8000-9000"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range tests {
+		if f.Allow(tt.port) != tt.allowed {
+			t.Errorf("port %d: expected allowed=%v", tt.port, tt.allowed)
+		}
+	}
+}
