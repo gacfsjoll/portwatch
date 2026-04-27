@@ -32,6 +32,11 @@ func runSuppress(args []string) {
 		os.Exit(1)
 	}
 
+	if d <= 0 {
+		fmt.Fprintf(os.Stderr, "duration must be positive, got %s\n", args[1])
+		os.Exit(1)
+	}
+
 	reason := "manual suppression"
 	if len(args) >= 3 {
 		reason = args[2]
@@ -52,4 +57,22 @@ func runSuppressList() {
 	for _, e := range entries {
 		fmt.Printf("%-8d %-30s %s\n", e.Port, e.Until.Format(time.RFC3339), e.Reason)
 	}
+}
+
+// runSuppressRemove handles: portwatch suppress remove <port>
+// It removes any active suppression for the given port.
+func runSuppressRemove(args []string) {
+	if len(args) < 1 {
+		fmt.Fprintln(os.Stderr, "usage: portwatch suppress remove <port>")
+		os.Exit(1)
+	}
+
+	port, err := strconv.Atoi(args[0])
+	if err != nil || port < 1 || port > 65535 {
+		fmt.Fprintf(os.Stderr, "invalid port: %s\n", args[0])
+		os.Exit(1)
+	}
+
+	globalSuppressionList.Remove(port)
+	fmt.Printf("suppression removed for port %d\n", port)
 }
